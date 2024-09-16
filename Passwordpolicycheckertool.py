@@ -61,6 +61,7 @@ class PasswordPolicyChecker(QWidget):
         self.result_label = QLabel()
         self.strength_label = QLabel()
         self.reuse_label = QLabel()
+        self.password_updated = QLabel()
 
         self.check_button.clicked.connect(self.show_password_policy_result)
 
@@ -69,6 +70,7 @@ class PasswordPolicyChecker(QWidget):
         layout.addWidget(self.check_button)
         layout.addWidget(self.result_label)
         layout.addWidget(self.reuse_label)
+        layout.addWidget(self.password_updated)
         layout.addWidget(self.strength_label)
 
         self.setLayout(layout)
@@ -102,11 +104,15 @@ class PasswordPolicyChecker(QWidget):
             self.result_label.setText("Password does not satisfy NIST or OWASP guidelines.")
 
         if not password_reused and password_strength >= 4:
-            updated = password_history.update_password(uid, hashed)
-            if updated:
-                self.reuse_label.setText("Current password has been updated")
-            else:
-                self.reuse_label.setText("Current password could not be updated")
+            if password_history.update_password(uid, hashed):
+                self.password_updated.setText("Current password has been updated")
+        else:
+            placeholder_text = "Current password was not updated"
+            if password_reused:
+                placeholder_text += f"\nPassword has been used within the last {PASSWORD_HISTORY} times."
+            if password_strength < 4:
+                placeholder_text += f"\nPassword is not strong enough (minimum of 4 required)"
+            self.password_updated.setText(placeholder_text)
 
         self.strength_label.setText(f"Password Strength: {password_strength}")
 
