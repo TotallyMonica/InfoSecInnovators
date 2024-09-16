@@ -3,6 +3,7 @@
 
 import hashlib
 import os
+import pprint
 import sys
 import sqlite3
 import random
@@ -22,10 +23,11 @@ def retrieve_password_history(uid: int, row_count: int = 0) -> list[str]:
     query = "SELECT password FROM passwords WHERE uid=?"
     params = (uid,)
     if row_count > 0:
-        query += " LIMIT ?"
+        query += " ORDER BY pid DESC LIMIT ?"
         params = (uid, row_count)
     cur.execute(query, params)
-    return cur.fetchall()
+    results = cur.fetchall()
+    return results
 
 def update_password(uid: int, password: str) -> bool:
     if not check_if_password_exists(uid, password, 3):

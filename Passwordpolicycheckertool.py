@@ -102,8 +102,11 @@ class PasswordPolicyChecker(QWidget):
             self.result_label.setText("Password does not satisfy NIST or OWASP guidelines.")
 
         if not password_reused and password_strength >= 4:
-            self.reuse_label.setText("Current password has been updated")
-            password_history.update_password(uid, hashed)
+            updated = password_history.update_password(uid, hashed)
+            if updated:
+                self.reuse_label.setText("Current password has been updated")
+            else:
+                self.reuse_label.setText("Current password could not be updated")
 
         self.strength_label.setText(f"Password Strength: {password_strength}")
 
