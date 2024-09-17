@@ -62,16 +62,20 @@ class PasswordPolicyChecker(QWidget):
         self.result_label = QLabel()
         self.strength_label = QLabel()
         self.reuse_label = QLabel()
+        self.password_expiry = QLabel()
         self.password_updated = QLabel()
+
+        self.last_changed_date = password_expiration.get_last_password_change()
 
         self.check_button.clicked.connect(self.show_password_policy_result)
 
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_entry)
         layout.addWidget(self.check_button)
-        layout.addWidget(self.result_label)
-        layout.addWidget(self.reuse_label)
         layout.addWidget(self.password_updated)
+        layout.addWidget(self.result_label)
+        layout.addWidget(self.password_expiry)
+        layout.addWidget(self.reuse_label)
         layout.addWidget(self.strength_label)
 
         self.setLayout(layout)
@@ -90,35 +94,31 @@ class PasswordPolicyChecker(QWidget):
         hashed = password_history.hash_password(password)
         password_reused = password_history.check_if_password_exists(uid, hashed, PASSWORD_HISTORY)
 
-        last_changed_date = password_expiration.get_last_password_change()
-        if password_expiration.check_password_expiration(last_changed_date):
-            self.reuse_label.setText("Your password has expired. Please change your password.")
+        if password_expiration.check_password_expiration(self.last_changed_date):
+            self.password_expiry.setText("Your password has expired. Please change your password.")
+        if password_reused:
+            self.reuse_label.setText(f"Password has been used within the last {PASSWORD_HISTORY} times.")
         else:
-        
-            if password_reused:
-                self.reuse_label.setText(f"Password has been used within the last {PASSWORD_HISTORY} times.")
-            else:
-                self.reuse_label.setText(f"Password is unique as of the last {PASSWORD_HISTORY} times.")
-    
-            if nist_result and owasp_result:
-                self.result_label.setText("Password satisfies both NIST and OWASP guidelines.")
-            elif nist_result:
-                self.result_label.setText("Password satisfies NIST guidelines but not OWASP guidelines.")
-            elif owasp_result:
-                self.result_label.setText("Password satisfies OWASP guidelines but not NIST guidelines.")
-            else:
-                self.result_label.setText("Password does not satisfy NIST or OWASP guidelines.")
-    
-            if not password_reused and password_strength >= 4:
-                if password_history.update_password(uid, hashed):
-                    self.password_updated.setText("Current password has been updated")
-            else:
-                placeholder_text = "Current password was not updated"
-                if password_reused:
-                    placeholder_text += f"\nPassword has been used within the last {PASSWORD_HISTORY} times."
-                if password_strength < 4:
-                    placeholder_text += f"\nPassword is not strong enough (minimum of 4 required)"
-                self.password_updated.setText(placeholder_text)
+            self.reuse_label.setText(f"Password is unique as of the last {PASSWORD_HISTORY} times.")
+
+        if nist_result and owasp_result:
+            self.result_label.setText("Password satisfies both NIST and OWASP guidelines.")
+        elif nist_result:
+            self.result_label.setText("Password satisfies NIST guidelines but not OWASP guidelines.")
+        elif owasp_result:
+            self.result_label.setText("Password satisfies OWASP guidelines but not NIST guidelines.")
+        else:
+            self.result_label.setText("Password does not satisfy NIST or OWASP guidelines.")
+
+        if not password_reused and password_strength >= 4:
+            if password_history.update_password(uid, hashed):
+                self.password_updated.setText("Current password has been updated")
+                self.last_changed_date = password_expiration.get_last_password_change()
+        else:
+            placeholder_text = "Current password was not updated"
+            if password_strength < 4:
+                placeholder_text += f"\nPassword is not strong enough (minimum of 4 required)"
+            self.password_updated.setText(placeholder_text)
 
         self.strength_label.setText(f"Password Strength: {password_strength}")
 
