@@ -91,7 +91,7 @@ class PasswordPolicyChecker(QWidget):
         password_reused = password_history.check_if_password_exists(uid, hashed, PASSWORD_HISTORY)
 
         last_changed_date = password_expiration.get_last_password_change()
-        if password_expiration.check_password_exiration(last_changed_date):
+        if password_expiration.check_password_expiration(last_changed_date):
             self.reuse_label.setText("Your password has expired. Please change your password.")
         else:
         
