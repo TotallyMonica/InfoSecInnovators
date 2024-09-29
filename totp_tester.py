@@ -16,7 +16,7 @@ class TotpProcessor:
         self.totp = totp
 
         qr = pyqrcode.create(totp_uri, error='L', version=4)
-        print(qr.svg("totp.svg"))
+        qr.svg("totp.svg")
 
     def validate(self, key: str) -> bool:
         return self.totp.verify(key)
