@@ -1,12 +1,15 @@
 import re
 import sys
 import pyfiglet
+from PyQt5.QtCore import Qt
+
 import database_handler
 import password_history
 import password_expiration
 import totp_tester
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtSvg import QSvgWidget
 
 DB_USER = "passwordchecker"
 PASSWORD_HISTORY = 3
@@ -56,8 +59,20 @@ class MFAQrCodeWindow(QWidget):
     def initUI(self):
         self.title = "MFA QR Code"
         self.setWindowTitle(self.title)
+        layout = QVBoxLayout()
 
         label = QLabel(self)
+        label.setText("MFA QR Code")
+        label.size()
+
+        code = QSvgWidget()
+        code.renderer().load("totp.svg")
+        code.setGeometry(250, 250, 500, 500)
+        code.renderer().setAspectRatioMode(Qt.KeepAspectRatio)
+
+        layout.addWidget(label)
+        layout.addWidget(code)
+        self.setLayout(layout)
 
 class PasswordPolicyChecker(QWidget):
     def __init__(self):
@@ -67,8 +82,8 @@ class PasswordPolicyChecker(QWidget):
     def initUI(self):
         self.users_db = database_handler.UsersDB()
         self.totp_key = self.users_db.get_mfa_key(users_db.lookup_uid(DB_USER))
-        totp = totp_tester.TotpProcessor(self.totp_key if self.totp_key else None)
-        self.totp_key = totp.get_key()
+        self.totp = totp_tester.TotpProcessor(self.totp_key if self.totp_key else None)
+        self.totp_key = self.totp.get_key()
         self.users_db.insert_mfa_key(users_db.lookup_uid(DB_USER), self.totp_key)
         layout = QVBoxLayout()
 
@@ -120,10 +135,9 @@ class PasswordPolicyChecker(QWidget):
         self.show()
 
     def display_totp_qrcode(self):
-        qr_code_app = QApplication(sys.argv)
-        qr_code_window = PasswordPolicyChecker()
-        qr_code_app.exec_()
-
+        self.totp.generate('svg')
+        self.qr_code_window = MFAQrCodeWindow()
+        self.qr_code_window.show()
 
     def show_password_policy_result(self):
         totp = totp_tester.TotpProcessor(self.totp_key)
