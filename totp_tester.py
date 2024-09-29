@@ -12,13 +12,18 @@ class TotpProcessor:
         self.issuer = issuer
         self.generate()
 
-    def generate(self):
+    def generate(self, file_type: str='png'):
         totp = pyotp.totp.TOTP(self.key, issuer=self.issuer, name=self.username)
         totp_uri = totp.provisioning_uri()
         self.totp = totp
 
         qr = pyqrcode.create(totp_uri, error='L', version=4)
-        qr.svg("totp.svg")
+        if file_type.lower() == 'png':
+            qr.png("totp.png")
+        elif file_type.lower() == 'cli' or file_type.lower().startswith('term'):
+            qr.term()
+        elif file_type.lower() == 'svg':
+            qr.svg("totp.svg")
 
     def validate(self, key: str) -> bool:
         return self.totp.verify(key)
