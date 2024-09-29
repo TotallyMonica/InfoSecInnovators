@@ -6,6 +6,8 @@ import password_expiration
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor, QPainter
 
+import totp_tester
+
 DB_USER = "passwordchecker"
 PASSWORD_HISTORY = 3
 
@@ -52,30 +54,45 @@ class PasswordPolicyChecker(QWidget):
         self.initUI()
 
     def initUI(self):
+        totp = totp_tester.TotpProcessor()
+        self.totp_key = totp.get_key()
         layout = QVBoxLayout()
 
         create_banner("Password Policy Checker")
-        
+
+        # Password entry
         self.password_label = QLabel("Enter password to check:")
         self.password_entry = QLineEdit()
+
+        # 2FA entry
+        self.totp_label = QLabel("Enter your 2FA code:")
+        self.totp_entry = QLineEdit()
+
+        # Validate password
         self.check_button = QPushButton("Check Password")
+
+        # Give password validation results
         self.result_label = QLabel()
         self.strength_label = QLabel()
         self.reuse_label = QLabel()
         self.password_expiry = QLabel()
+        self.valid_totp_label = QLabel()
         self.password_updated = QLabel()
-
         self.last_changed_date = password_expiration.get_last_password_change()
 
         self.check_button.clicked.connect(self.show_password_policy_result)
 
+        # Add all the widgets to the GUI
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_entry)
+        layout.addWidget(self.totp_label)
+        layout.addWidget(self.totp_entry)
         layout.addWidget(self.check_button)
         layout.addWidget(self.password_updated)
-        layout.addWidget(self.result_label)
         layout.addWidget(self.password_expiry)
         layout.addWidget(self.reuse_label)
+        layout.addWidget(self.valid_totp_label)
+        layout.addWidget(self.result_label)
         layout.addWidget(self.strength_label)
 
         self.setLayout(layout)
@@ -84,6 +101,7 @@ class PasswordPolicyChecker(QWidget):
         self.show()
 
     def show_password_policy_result(self):
+        totp = totp_tester.TotpProcessor(self.totp_key)
         password = self.password_entry.text()
         nist_result = check_nist_password_guidelines(password)
         owasp_result = check_owasp_password_guidelines(password)
@@ -94,13 +112,23 @@ class PasswordPolicyChecker(QWidget):
         hashed = password_history.hash_password(password)
         password_reused = password_history.check_if_password_exists(uid, hashed, PASSWORD_HISTORY)
 
+        # Check if password expired
         if password_expiration.check_password_expiration(self.last_changed_date):
             self.password_expiry.setText("Your password has expired. Please change your password.")
+
+        # Check if password is unique
         if password_reused:
             self.reuse_label.setText(f"Password has been used within the last {PASSWORD_HISTORY} times.")
         else:
             self.reuse_label.setText(f"Password is unique as of the last {PASSWORD_HISTORY} times.")
 
+        # Check if TOTP code is valid
+        if totp.validate(self.totp_entry.text()):
+            self.valid_totp_label.setText("Entered TOTP Key is correct")
+        else:
+            self.valid_totp_label.setText("Entered TOTP Key is invalid or has expired")
+
+        # Check if password is complex enough
         if nist_result and owasp_result:
             self.result_label.setText("Password satisfies both NIST and OWASP guidelines.")
         elif nist_result:
@@ -110,7 +138,8 @@ class PasswordPolicyChecker(QWidget):
         else:
             self.result_label.setText("Password does not satisfy NIST or OWASP guidelines.")
 
-        if not password_reused and password_strength >= 4:
+        # Determine if password should be changed
+        if not password_reused and password_strength >= 4 and totp.validate(self.totp_entry.text()):
             if password_history.update_password(uid, hashed):
                 self.password_updated.setText("Current password has been updated")
                 self.last_changed_date = password_expiration.get_last_password_change()
