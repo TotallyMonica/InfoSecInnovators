@@ -60,18 +60,15 @@ class MFAQrCodeWindow(QWidget):
         self.title = "MFA QR Code"
         self.setWindowTitle(self.title)
         layout = QVBoxLayout()
-
-        label = QLabel(self)
-        label.setText("MFA QR Code")
-        label.size()
+        layout.setStretch(0, 1)
 
         code = QSvgWidget()
         code.renderer().load("totp.svg")
-        code.setGeometry(250, 250, 500, 500)
         code.renderer().setAspectRatioMode(Qt.KeepAspectRatio)
+        code.setStyleSheet("background-color: white;")
 
-        layout.addWidget(label)
         layout.addWidget(code)
+        self.setMinimumSize(250, 250)
         self.setLayout(layout)
 
 class PasswordPolicyChecker(QWidget):
