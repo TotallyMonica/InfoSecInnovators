@@ -48,6 +48,17 @@ def check_password_strength(password):
     total_strength = length_strength + complexity_strength
     return total_strength
 
+class MFAQrCodeWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.title = "MFA QR Code"
+        self.setWindowTitle(self.title)
+
+        label = QLabel(self)
+
 class PasswordPolicyChecker(QWidget):
     def __init__(self):
         super().__init__()
@@ -71,6 +82,9 @@ class PasswordPolicyChecker(QWidget):
         self.totp_label = QLabel("Enter your 2FA code:")
         self.totp_entry = QLineEdit()
 
+        # 2FA QR Code
+        self.totp_qrcode_button = QPushButton("QR Code")
+
         # Validate password
         self.check_button = QPushButton("Check Password")
 
@@ -84,12 +98,14 @@ class PasswordPolicyChecker(QWidget):
         self.last_changed_date = password_expiration.get_last_password_change()
 
         self.check_button.clicked.connect(self.show_password_policy_result)
+        self.totp_qrcode_button.clicked.connect(self.display_totp_qrcode)
 
         # Add all the widgets to the GUI
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_entry)
         layout.addWidget(self.totp_label)
         layout.addWidget(self.totp_entry)
+        layout.addWidget(self.totp_qrcode_button)
         layout.addWidget(self.check_button)
         layout.addWidget(self.password_updated)
         layout.addWidget(self.password_expiry)
@@ -102,6 +118,12 @@ class PasswordPolicyChecker(QWidget):
 
         self.setWindowTitle("Password Policy Checker")
         self.show()
+
+    def display_totp_qrcode(self):
+        qr_code_app = QApplication(sys.argv)
+        qr_code_window = PasswordPolicyChecker()
+        qr_code_app.exec_()
+
 
     def show_password_policy_result(self):
         totp = totp_tester.TotpProcessor(self.totp_key)
