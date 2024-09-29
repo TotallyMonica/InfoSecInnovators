@@ -4,7 +4,10 @@ import pyqrcodeng as pyqrcode
 class TotpProcessor:
     def __init__(self, key: str=pyotp.random_base32(), username: str=None, issuer: str=None):
         self.totp = None
-        self.key = key
+        if key is None:
+            self.key = pyotp.random_base32()
+        else:
+            self.key = key
         self.username = username
         self.issuer = issuer
         self.generate()

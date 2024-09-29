@@ -1,12 +1,12 @@
 import re
 import sys
 import pyfiglet
+import database_handler
 import password_history
 import password_expiration
+import totp_tester
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor, QPainter
-
-import totp_tester
 
 DB_USER = "passwordchecker"
 PASSWORD_HISTORY = 3
@@ -52,10 +52,13 @@ class PasswordPolicyChecker(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.users_db = database_handler.UsersDB
 
     def initUI(self):
-        totp = totp_tester.TotpProcessor()
+        self.totp_key = self.users_db.get_mfa_key(users_db.lookup_uid(DB_USER))
+        totp = totp_tester.TotpProcessor(self.totp_key if self.totp_key else None)
         self.totp_key = totp.get_key()
+        self.users_db.insert_mfa_key(users_db.lookup_uid(DB_USER), self.totp_key)
         layout = QVBoxLayout()
 
         create_banner("Password Policy Checker")
@@ -108,7 +111,7 @@ class PasswordPolicyChecker(QWidget):
         password_strength = check_password_strength(password)
 
         # Interface with database
-        uid = password_history.lookup_uid(DB_USER)
+        uid = self.users_db.lookup_uid(DB_USER)
         hashed = password_history.hash_password(password)
         password_reused = password_history.check_if_password_exists(uid, hashed, PASSWORD_HISTORY)
 
@@ -165,7 +168,8 @@ class PasswordPolicyChecker(QWidget):
             return "green"
 
 if __name__ == '__main__':
-    password_history.insert_new_user(DB_USER, "")
+    users_db = database_handler.UsersDB()
+    users_db.insert_new_user(DB_USER, "")
     app = QApplication(sys.argv)
     ex = PasswordPolicyChecker()
     sys.exit(app.exec_())
