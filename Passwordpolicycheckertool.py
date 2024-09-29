@@ -118,6 +118,8 @@ class PasswordPolicyChecker(QWidget):
         # Check if password expired
         if password_expiration.check_password_expiration(self.last_changed_date):
             self.password_expiry.setText("Your password has expired. Please change your password.")
+        else:
+            self.password_expiry.setText("")
 
         # Check if password is unique
         if password_reused:
