@@ -52,9 +52,9 @@ class PasswordPolicyChecker(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.users_db = database_handler.UsersDB
 
     def initUI(self):
+        self.users_db = database_handler.UsersDB()
         self.totp_key = self.users_db.get_mfa_key(users_db.lookup_uid(DB_USER))
         totp = totp_tester.TotpProcessor(self.totp_key if self.totp_key else None)
         self.totp_key = totp.get_key()
