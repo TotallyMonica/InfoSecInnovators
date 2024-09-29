@@ -1,12 +1,15 @@
 import re
 import sys
 import pyfiglet
+from PyQt5.QtCore import Qt
+
 import database_handler
 import password_history
 import password_expiration
 import totp_tester
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtSvg import QSvgWidget
 
 DB_USER = "passwordchecker"
 PASSWORD_HISTORY = 3
@@ -48,6 +51,26 @@ def check_password_strength(password):
     total_strength = length_strength + complexity_strength
     return total_strength
 
+class MFAQrCodeWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.title = "MFA QR Code"
+        self.setWindowTitle(self.title)
+        layout = QVBoxLayout()
+        layout.setStretch(0, 1)
+
+        code = QSvgWidget()
+        code.renderer().load("totp.svg")
+        code.renderer().setAspectRatioMode(Qt.KeepAspectRatio)
+        code.setStyleSheet("background-color: white;")
+
+        layout.addWidget(code)
+        self.setMinimumSize(250, 250)
+        self.setLayout(layout)
+
 class PasswordPolicyChecker(QWidget):
     def __init__(self):
         super().__init__()
@@ -56,8 +79,8 @@ class PasswordPolicyChecker(QWidget):
     def initUI(self):
         self.users_db = database_handler.UsersDB()
         self.totp_key = self.users_db.get_mfa_key(users_db.lookup_uid(DB_USER))
-        totp = totp_tester.TotpProcessor(self.totp_key if self.totp_key else None)
-        self.totp_key = totp.get_key()
+        self.totp = totp_tester.TotpProcessor(self.totp_key if self.totp_key else None)
+        self.totp_key = self.totp.get_key()
         self.users_db.insert_mfa_key(users_db.lookup_uid(DB_USER), self.totp_key)
         layout = QVBoxLayout()
 
@@ -70,6 +93,9 @@ class PasswordPolicyChecker(QWidget):
         # 2FA entry
         self.totp_label = QLabel("Enter your 2FA code:")
         self.totp_entry = QLineEdit()
+
+        # 2FA QR Code
+        self.totp_qrcode_button = QPushButton("QR Code")
 
         # Validate password
         self.check_button = QPushButton("Check Password")
@@ -84,12 +110,14 @@ class PasswordPolicyChecker(QWidget):
         self.last_changed_date = password_expiration.get_last_password_change()
 
         self.check_button.clicked.connect(self.show_password_policy_result)
+        self.totp_qrcode_button.clicked.connect(self.display_totp_qrcode)
 
         # Add all the widgets to the GUI
         layout.addWidget(self.password_label)
         layout.addWidget(self.password_entry)
         layout.addWidget(self.totp_label)
         layout.addWidget(self.totp_entry)
+        layout.addWidget(self.totp_qrcode_button)
         layout.addWidget(self.check_button)
         layout.addWidget(self.password_updated)
         layout.addWidget(self.password_expiry)
@@ -102,6 +130,11 @@ class PasswordPolicyChecker(QWidget):
 
         self.setWindowTitle("Password Policy Checker")
         self.show()
+
+    def display_totp_qrcode(self):
+        self.totp.generate('svg')
+        self.qr_code_window = MFAQrCodeWindow()
+        self.qr_code_window.show()
 
     def show_password_policy_result(self):
         totp = totp_tester.TotpProcessor(self.totp_key)
