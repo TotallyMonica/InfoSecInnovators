@@ -1,12 +1,14 @@
 import re
 import sys
 import pyfiglet
+import bcrypt
 from PyQt5.QtCore import Qt
 
 import database_handler
 import password_history
 import password_expiration
 import totp_tester
+import password_hasher
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtSvg import QSvgWidget
@@ -146,8 +148,9 @@ class PasswordPolicyChecker(QWidget):
         # Interface with database
         uid = self.users_db.lookup_uid(DB_USER)
         hashed = password_history.hash_password(password)
+        hashed_password = password_hasher.hashing_password(password)
         password_reused = password_history.check_if_password_exists(uid, hashed, PASSWORD_HISTORY)
-
+        
         # Check if password expired
         if password_expiration.check_password_expiration(self.last_changed_date):
             self.password_expiry.setText("Your password has expired. Please change your password.")
@@ -163,6 +166,7 @@ class PasswordPolicyChecker(QWidget):
         # Check if TOTP code is valid
         if totp.validate(self.totp_entry.text()):
             self.valid_totp_label.setText("Entered TOTP Key is correct")
+            password_hasher.save_to_file(hashed_password)
         else:
             self.valid_totp_label.setText("Entered TOTP Key is invalid or has expired")
 
