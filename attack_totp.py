@@ -3,11 +3,8 @@ import totp_tester
 import database_handler
 
 if __name__ == '__main__':
-    # Get TOTP key
-    key = database_handler.UsersDB().get_mfa_key(database_handler.UsersDB().lookup_uid("passwordchecker"))
-
-    # Generate TOTP instance
-    totp = totp_tester.TotpProcessor(key)
+    # Get TOTP key, simulates socket connection to remote server
+    totp = totp_tester.TotpProcessor(database_handler.UsersDB().get_mfa_key(database_handler.UsersDB().lookup_uid("passwordchecker")))
 
     # Get brute force start time
     start_time = datetime.now()
