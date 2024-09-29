@@ -3,10 +3,7 @@
 
 import hashlib
 import os
-import pprint
-import sys
 import sqlite3
-import random
 import string
 
 con = sqlite3.connect('passwords.db')

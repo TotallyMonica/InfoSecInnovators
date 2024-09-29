@@ -1,5 +1,4 @@
 import pyotp
-import time
 import pyqrcodeng as pyqrcode
 
 class TotpProcessor:
